@@ -1,0 +1,78 @@
+# ref : Anaconda Inc., Using conda with Travis CI, Conda documentation, https://conda.io/docs/user-guide/tasks/use-conda-with-travis-ci.html
+#       CodeChat, .travis.yml - Travis CI configuration, https://pythonhosted.org/CodeChat/.travis.yml.html
+#       Travis CI, Python example (unsupported languages), https://docs.travis-ci.com/user/multi-os/#python-example-unsupported-languages
+#       Kalderimis & Nagy, Windows is Available (Early Release), Oct 10 2018, https://blog.travis-ci.com/2018-10-11-windows-early-release
+#       Miniconda (Python 3) 4.5.11, Chocolatey Gallery, https://chocolatey.org/packages/miniconda3
+#       The Windows Build Environment, https://docs.travis-ci.com/user/reference/windows/
+#       QCGrids : a numerical integration library for quantum chemistry, https://github.com/theochem/qcgrids/
+#       Caching Dependencies and Directories, https://docs.travis-ci.com/user/caching/
+#       Caching is now enabled in Windows with rewritten caching utility, https://changelog.travis-ci.com/caching-is-now-enabled-in-windows-with-rewritten-caching-utility-76161
+#       To which folder does Chocolatey download the packages before installing them?, https://stackoverflow.com/questions/38421395/to-which-folder-does-chocolatey-download-the-packages-before-installing-them
+
+
+language : generic
+
+os :
+- linux
+- osx
+- windows
+
+before_cache:
+- rm -rf $HOME/miniconda/locks $HOME/miniconda/pkgs $HOME/miniconda/var $HOME/miniconda/conda-meta/history
+
+cache :
+  directories:
+    - $HOME/download
+    - $HOME/miniconda
+    - $HOME/AppData/Local/Temp/chocolatey
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
+      if [[ -f $HOME/download/miniconda.sh ]]; then
+        echo "miniconda.sh for posix already available";
+      else
+        mkdir -p $HOME/download;
+        if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+          echo "downloading miniconda.sh for linux";
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $HOME/download/miniconda.sh;
+        elif  [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+          echo "downloading miniconda.sh for osx";
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O $HOME/download/miniconda.sh;
+        fi;
+      fi;
+    fi
+
+install:
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
+      if [[ -d $HOME/miniconda/bin ]]; then
+        echo "miniconda for posix already available";
+      else
+        echo "installing miniconda for posix";
+        bash $HOME/download/miniconda.sh -b -u -p $HOME/miniconda;
+      fi;
+      export PATH="$HOME/miniconda:$HOME/miniconda/bin:$PATH";
+      hash -r;
+    elif  [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      if [[ -d $HOME/miniconda/scripts ]]; then
+        echo "miniconda for Windows already installed";
+      else
+        echo "installing miniconda for windows";
+        choco install miniconda3 --params="'/D:$HOME/miniconda'";
+      fi;
+      export PATH="$HOME/miniconda:$HOME/miniconda/scripts:$PATH";
+    fi
+  - echo $TRAVIS_OS_NAME
+  - echo $TRAVIS_PYTHON_VERSION
+  - conda info -a
+  - if [[ ! -d $HOME/miniconda/envs/test-environment ]]; then
+      conda config --set always_yes yes --set changeps1 no;
+      conda update -q conda;
+      conda env create -n test-environment python=$TRAVIS_PYTHON_VERSION -f [your env yml file path here without brackets];
+    fi
+  - source activate test-environment
+
+script: 
+  - echo "your test here"
+# notifications:
+#    email:
+#        - [your email addres here without brackets and uncomment lines]
