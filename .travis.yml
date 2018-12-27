@@ -78,6 +78,8 @@ install:
   - conda update -q conda;
   - if [[ ! -d $MINICONDA_PATH/envs/test-environment ]]; then
       conda env create -n test-environment python=$TRAVIS_PYTHON_VERSION -f [your env yml file path here without brackets];
+    else
+      conda env update -n test-environment python=$TRAVIS_PYTHON_VERSION -f [your env yml file path here without brackets];
     fi
   - source activate test-environment
 
