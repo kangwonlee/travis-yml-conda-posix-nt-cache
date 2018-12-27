@@ -28,8 +28,17 @@ cache :
     - $HOME/AppData/Local/Temp/chocolatey
 
 before_install:
+  # Set conda path info
   - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
-      if [[ -f $HOME/download/miniconda.sh ]]; then
+      MINICONDA_PATH=$HOME/miniconda;
+      MINICONDA_SUB_PATH=$MINICONDA_PATH/bin;
+    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      MINICONDA_PATH=/c/tools/miniconda3;
+      MINICONDA_SUB_PATH=$MINICONDA_PATH/Scripts;
+    fi
+  # Obtain miniconda installer
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
+      if [[ -f $HOME/download/miniconda.sh && $CONDA_PYTHON != "nightly" ]]; then
         echo "miniconda.sh for posix already available";
       else
         mkdir -p $HOME/download;
@@ -44,30 +53,30 @@ before_install:
     fi
 
 install:
+  # Install miniconda
   - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
-      if [[ -d $HOME/miniconda/bin ]]; then
+      if [[ -d $MINICONDA_SUB_PATH ]]; then
         echo "miniconda for posix already available";
       else
         echo "installing miniconda for posix";
-        bash $HOME/download/miniconda.sh -b -u -p $HOME/miniconda;
+        bash $HOME/download/miniconda.sh -b -u -p $MINICONDA_PATH;
       fi;
-      export PATH="$HOME/miniconda:$HOME/miniconda/bin:$PATH";
-      hash -r;
     elif  [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      if [[ -d $HOME/miniconda/scripts ]]; then
+      if [[ -d $MINICONDA_SUB_PATH ]]; then
         echo "miniconda for Windows already installed";
       else
         echo "installing miniconda for windows";
-        choco install miniconda3 --params="'/D:$HOME/miniconda'";
+        choco install miniconda3;
       fi;
-      export PATH="$HOME/miniconda:$HOME/miniconda/scripts:$PATH";
-    fi
+    fi;
+  - export PATH="$MINICONDA_PATH:$MINICONDA_SUB_PATH:$PATH";
+  - hash -r;
   - echo $TRAVIS_OS_NAME
   - echo $TRAVIS_PYTHON_VERSION
   - conda info -a
-  - if [[ ! -d $HOME/miniconda/envs/test-environment ]]; then
-      conda config --set always_yes yes --set changeps1 no;
-      conda update -q conda;
+  - conda config --set always_yes yes --set changeps1 no;
+  - conda update -q conda;
+  - if [[ ! -d $MINICONDA_PATH/envs/test-environment ]]; then
       conda env create -n test-environment python=$TRAVIS_PYTHON_VERSION -f [your env yml file path here without brackets];
     fi
   - source activate test-environment
